@@ -43,16 +43,16 @@ class DataHandlerModule():
 
 		# [STEP-4] Normalize the node feature matrix and add the self-loop for adjacency matrix.
 		if self.args.data_name.startswith('amazon'):
-			transform = RowFeatNormalizer(subtract_min=True, node_feat_names=['x'])
+			transform = RowFeatNormalizer(subtract_min=True, node_feat_names=['feature'])
 			graph = transform(graph)
-		graph.ndata["x"] = torch.FloatTensor(graph.ndata["x"]).contiguous()
+		graph.ndata["feature"] = torch.FloatTensor(graph.ndata["feature"]).contiguous()
 
 		sampler = dgl.dataloading.MultiLayerFullNeighborSampler(len(self.args.emb_size))
 		valid_loader = dgl.dataloading.DataLoader(graph, idx_valid, sampler, batch_size=self.args.batch_size, shuffle=False, drop_last=False, use_uva=True)
 		test_loader = dgl.dataloading.DataLoader(graph, idx_test, sampler, batch_size=self.args.batch_size, shuffle=False, drop_last=False, use_uva=True)
 		
 		# [STEP-5] Define the instance variable to handle the data. 
-		self.dataset = {'features': graph.ndata["x"], 'labels': labels, 'graph': graph,
+		self.dataset = {'features': graph.ndata["feature"], 'labels': labels, 'graph': graph,
 				'idx_train': idx_train,'idx_valid': idx_valid,'idx_test': idx_test,
 				'y_train': y_train, 'y_valid': y_valid, 'y_test': y_test,
 				'train_loader': None, 'valid_loader': valid_loader, 'test_loader':test_loader,                                
@@ -67,6 +67,9 @@ if __name__ == '__main__':
 	parser.add_argument('--train_ratio', type=float, default=0.8)
 	parser.add_argument('--test_ratio', type=float, default=0.2)
 	parser.add_argument('--seed', type=int, default=1)
-	parser.add_argument('--emb_size', type=int, default=100)
+	parser.add_argument('--emb_size', default=[64, 64])
+	parser.add_argument('--cuda_id', type=int, default=0)
+	parser.add_argument('--batch_size', type=int, default=1024)
 	args = parser.parse_args()
-	data_handler = DataHandlerModule(args)
+	args_map = vars(parser.parse_args())
+	data_handler = DataHandlerModule(args_map)

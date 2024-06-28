@@ -2,7 +2,8 @@ import math
 
 import torch
 from torch.nn.parameter import Parameter
-from torch import Module, nn
+from torch.nn.modules.module import Module
+from torch import nn
 import torch.nn.functional as F
 
 

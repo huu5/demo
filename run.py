@@ -8,7 +8,7 @@ from model_custom import *
 
 def get_arguments():
 	parser = argparse.ArgumentParser()
-	parser.add_argument('--exp_config_path', type=str, default='./yelpchi.json')
+	parser.add_argument('--exp_config_path', type=str, default='./template.json')
 	args = vars(parser.parse_args())  # var()转换为字典
 	return args
 

@@ -1,6 +1,7 @@
 {
     "seed": 717,
-    "dataset": "yelp",
+    "data_name": "yelp",
+    "cuda_id": 0,
     "agg_type": "cat",
     "base_dir": "preprocessing/seq_data",
     "batch_size": 512,
@@ -17,7 +18,7 @@
     "n_hops": 2,
     "n_layers": 3,
     "norm_feat": true,
-    "max_epochs": 500,
+    "max_epochs": 200,
     "train_size": 0.4,
     "val_size": 0.1,
     "weight_decay": 0.0001

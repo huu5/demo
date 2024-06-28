@@ -33,7 +33,8 @@ class SimPGCN(nn.Module):
                  withbn=True,
                  withloop=True,
                  aggrmethod="add",
-                 mixmode=False, **kwargs):
+                 mixmode=False,
+                 **kwargs):
         """
         Initial function.
         :param nfeat: the input feature dimension.

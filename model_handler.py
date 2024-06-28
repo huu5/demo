@@ -55,11 +55,12 @@ class ModelHandlerModule():
 		- It is determined in the datahandler.
 		"""
         torch.cuda.empty_cache()
-        graph = self.dataset['graph']
+        # graph = self.dataset['graph']
         feature = self.dataset['features']
 
         model = SimPGCN(feature.shape[1], nhid=self.args.hidden_dim, nclass=2, nhidlayer=self.args.n_layers,
-                        dropout=self.args.dropout, device=self.args.cuda_id)
+                        dropout=self.args.dropout, device=self.args.cuda_id, bias_init=self.args.bias_init,
+                        gamma=self.args.gamma, nnodes=self.args.n_nodes)
 
         return model
 
@@ -114,7 +115,7 @@ class ModelHandlerModule():
                 # [STEP-4-2] Set the batche nodes.
                 _, output_nodes, blocks = batch
                 blocks = [b.to(device) for b in blocks]
-                output_labels = blocks[-1].dstdata['y'].type(torch.LongTensor).cuda()
+                output_labels = blocks[-1].dstdata['label'].type(torch.LongTensor).cuda()
 
                 # [STEP-4=3] Compute the loss of the model.
                 """
