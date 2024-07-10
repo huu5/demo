@@ -62,6 +62,7 @@ class GraphConvolutionBS(Module):
         if self.self_weight is not None:
             glorot(self.weight)
         zeros(self.bias)
+
     # 图卷积层GCN的计算公式如下：
     # \[H ^ {(l + 1)} = \sigma(\tilde
     # {D} ^ {-1 / 2} \tilde
@@ -70,8 +71,9 @@ class GraphConvolutionBS(Module):
     # H ^ {(l)}
     # W ^ {(l)}) \]
     def forward(self, input, adj):
-        support = torch.mm(input, self.weight)
-        output = torch.spmm(adj, support)
+        support = torch.mm(input, self.weight)  # 形状为 (num_nodes, out_features) 的支持矩阵 support。
+        output = torch.spmm(adj, support)  # 进行稀疏矩阵与密集矩阵的乘法，将邻接矩阵 adj 与支持矩阵 support 相乘，
+        # 得到新的节点特征矩阵 output，形状为 (num_nodes, out_features)。
 
         # Self-loop
         if self.self_weight is not None:
@@ -216,7 +218,8 @@ class MultiLayerGCNBlock(Module):
                                     activation=activation,
                                     dropout=dropout,
                                     dense=False,
-                                    aggrmethod="nores")
+                                    aggrmethod="nores")  # nores 可能表示 "no residual" 或者 "no residual connection"，
+        # 这意味着在这个聚合方法中，不使用残差连接。
 
     def forward(self, input, adj):
         return self.model.forward(input, adj)

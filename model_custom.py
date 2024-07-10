@@ -37,20 +37,20 @@ class SimPGCN(nn.Module):
                  **kwargs):
         """
         Initial function.
-        :param nfeat: the input feature dimension.
-        :param nhid:  the hidden feature dimension.
-        :param nclass: the output feature dimension.
-        :param nhidlayer: the number of hidden blocks.
-        :param dropout:  the dropout ratio.
-        :param baseblock: the baseblock type, can be "mutigcn", "resgcn", "densegcn" and "inceptiongcn".
-        :param inputlayer: the input layer type, can be "gcn", "dense", "none".
-        :param outputlayer: the input layer type, can be "gcn", "dense".
-        :param nbaselayer: the number of layers in one hidden block.
-        :param activation: the activation function, default is ReLu.
-        :param withbn: using batch normalization in graph convolution.
-        :param withloop: using self feature modeling in graph convolution.
+        :param nfeat: the input feature dimension.输入维度
+        :param nhid:  the hidden feature dimension.隐藏层维度
+        :param nclass: the output feature dimension.分类别数
+        :param nhidlayer: the number of hidden blocks.隐藏层数
+        :param dropout:  the dropout ratio.随机丢弃
+        :param baseblock: the baseblock type, can be "mutigcn", "resgcn", "densegcn" and "inceptiongcn".中间模块的类型
+        :param inputlayer: the input layer type, can be "gcn", "dense", "none".输入层类别
+        :param outputlayer: the input layer type, can be "gcn", "dense".输出层类别
+        :param nbaselayer: the number of layers in one hidden block.一个模块包含几个隐藏层
+        :param activation: the activation function, default is ReLu.什么激活函数
+        :param withbn: using batch normalization in graph convolution.批归一化
+        :param withloop: using self feature modeling in graph convolution.节点自循环
         :param aggrmethod: the aggregation function for baseblock, can be "concat" and "add". For "resgcn", the default
-                           is "add", for others the default is "concat".
+                           is "add", for others the default is "concat".聚合函数
         :param mixmode: enable cpu-gpu mix mode. If true, put the inputlayer to cpu.
         """
         super(SimPGCN, self).__init__()
@@ -87,7 +87,7 @@ class SimPGCN(nn.Module):
         self.reset_parameters()
 
         self.scores = nn.ParameterList()  # 平衡原始图和特征图效果的分数向量  （n, 1）
-        self.scores.append(Parameter(torch.FloatTensor(nfeat, 1)))
+        self.scores.append(Parameter(torch.FloatTensor(nfeat, 1)))  # 计算分数向量的权重参数
         for i in range(nhidlayer):
             self.scores.append(Parameter(torch.FloatTensor(nhid, 1)))
 
@@ -126,6 +126,7 @@ class SimPGCN(nn.Module):
 
         self.gamma = kwargs['gamma']
 
+
     def reset_parameters(self):
         pass
 
@@ -137,6 +138,8 @@ class SimPGCN(nn.Module):
         '''output embedding and log_softmax'''
         gamma = self.gamma  # Eq(11)中的超参数
 
+
+
         use_Dk = True
         s_i = torch.sigmoid(fea @ self.scores[0] + self.bias[0])  # Eq(10)
 
@@ -146,7 +149,7 @@ class SimPGCN(nn.Module):
         else:
             x = s_i * self.ingc(fea, adj) + (1-s_i) * self.ingc(fea, adj_knn)  # Eq(9)
 
-        if layer ==1:
+        if layer == 1:
             embedding = x.clone()
 
         x = F.dropout(x, self.dropout, training=self.training)
@@ -171,7 +174,7 @@ class SimPGCN(nn.Module):
 
         if layer == -1:
             embedding = x.clone()
-        x = F.log_softmax(x, dim=1)
+        log_probs = F.log_softmax(x, dim=1)
 
-        self.ss = torch.cat((s_i.view(1,-1), s_o.view(1,-1), gamma*Dk_i.view(1,-1), gamma*Dk_o.view(1,-1)), dim=0)
-        return x, embedding
+        self.ss = torch.cat((s_i.view(1, -1), s_o.view(1, -1), gamma * Dk_i.view(1, -1), gamma * Dk_o.view(1, -1)), dim=0)
+        return log_probs, embedding

@@ -7,7 +7,7 @@ from sklearn.model_selection import train_test_split
 DATA_NAMES = ['yelp', 'amazon', 'amazon_new']
 
 
-def load_data(data_name, multi_relation, raw_dir='./data', seed=42, train_size=0.1, test_size=0.67):
+def load_data(data_name, multi_relation, self_loop=True, raw_dir='./data', seed=42, train_size=0.1, test_size=0.67):
 	
 	assert data_name in DATA_NAMES
 
@@ -30,9 +30,9 @@ def load_data(data_name, multi_relation, raw_dir='./data', seed=42, train_size=0
 		# graph.ndata['x'] = graph.ndata['feature']
 		# graph.ndata['y'] = graph.ndata['label']
 		# del graph.ndata['_ID'], graph.edata['_ID']
-
-	for etype in graph.etypes:
-		graph = dgl.add_self_loop(graph, etype=etype)
+	if self_loop:
+		for etype in graph.etypes:
+			graph = dgl.add_self_loop(graph, etype=etype)
 	labels = graph.ndata["label"]
 	# [STEP-3] Split the train/valid/test dataset with stratified sampling.
 	# if data_name.startswith('amazon'):
@@ -59,9 +59,11 @@ def load_data(data_name, multi_relation, raw_dir='./data', seed=42, train_size=0
 
 
 if __name__ == '__main__':
-	g = load_data('yelp', multi_relation=False)
+	g = load_data('yelp', multi_relation=True)
 	print(g.ndata.items())
-	node = g.ndata['_ID']
-	edge = g.edata['_ID']
+	# node = g.ndata['_ID']
+	# edge = g.edata['_ID']
+	train = g.ndata['train_mask']
 	print(g.ndata['label'].unique())
+
 

@@ -1,17 +1,16 @@
 {
    "seed": 2,
+   "dataset": "yelp",
    "data_name": "yelp",
-   "multi_relation": true,
-   "n_head": [
-      2,
-      2
-   ],
+   "multi_relation": false,
    "n_head_agg": 8,
    "feat_drop": 0,
    "attn_drop": 0,
+   "gamma":  0.01,
    "train_ratio": 0.1,
    "test_ratio": 0.67,
    "hidden_dim": 32,
+   "k": 20,
    "n_layers": 1,
    "dropout": 0.5,
    "bias_init": 0,
@@ -26,5 +25,9 @@
    "batch_size": 1024,
    "patience": 100,
    "cuda_id": 0,
-   "save_dir": "./temp_results"
+   "save_dir": "./temp_results",
+   "n_head": [
+      2,
+      2
+   ]
 }

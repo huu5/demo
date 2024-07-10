@@ -6,11 +6,13 @@ from datasets import *
 from utils import *
 from model_custom import *
 
+
 def get_arguments():
 	parser = argparse.ArgumentParser()
 	parser.add_argument('--exp_config_path', type=str, default='./template.json')
 	args = vars(parser.parse_args())  # var()转换为字典
 	return args
+
 
 def main(args) -> None:
 	# [STEP-1] Open the configuration file and get arguments.
@@ -23,6 +25,7 @@ def main(args) -> None:
 	# [STEP-3] Train model and evaluate the performance.
 	model = ModelHandlerModule(args, data_handler)
 	_, _ = model.train()
+
 
 if __name__ == '__main__':
 	args = get_arguments()

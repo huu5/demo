@@ -7,6 +7,7 @@ from sklearn.model_selection import train_test_split
 from dgl import RowFeatNormalizer
 from datasets import *
 from utils import *
+from selfsl import *
 
 
 class DataHandlerModule():
@@ -44,10 +45,13 @@ class DataHandlerModule():
 		# [STEP-4] Normalize the node feature matrix and add the self-loop for adjacency matrix.
 		if self.args.data_name.startswith('amazon'):
 			transform = RowFeatNormalizer(subtract_min=True, node_feat_names=['feature'])
+			# 这个转换器的作用是对节点特征进行归一化，其中参数 subtract_min=True 表示减去最小值，
+			# node_feat_names=['x'] 表示对节点特征中的 "x" 进行归一化。这个步骤可能有助于提高模型的训练效果或稳定性。
 			graph = transform(graph)
-		graph.ndata["feature"] = torch.FloatTensor(graph.ndata["feature"]).contiguous()
+		graph.ndata["feature"] = torch.FloatTensor(graph.ndata["feature"]).contiguous()  # 调用 contiguous() 方法，
+		# 以确保数据的存储方式是连续的。这是因为 PyTorch 要求数据在内存中是连续存储的。
 
-		sampler = dgl.dataloading.MultiLayerFullNeighborSampler(len(self.args.emb_size))
+		sampler = dgl.dataloading.MultiLayerFullNeighborSampler(len(self.args.emb_size))  # 参数表示每个节点采样邻居的层数。
 		valid_loader = dgl.dataloading.DataLoader(graph, idx_valid, sampler, batch_size=self.args.batch_size, shuffle=False, drop_last=False, use_uva=True)
 		test_loader = dgl.dataloading.DataLoader(graph, idx_test, sampler, batch_size=self.args.batch_size, shuffle=False, drop_last=False, use_uva=True)
 		
@@ -73,3 +77,7 @@ if __name__ == '__main__':
 	args = parser.parse_args()
 	args_map = vars(parser.parse_args())
 	data_handler = DataHandlerModule(args_map)
+	idx_train = data_handler.dataset['idx_train']
+	feat = data_handler.dataset['features']
+	train = feat[idx_train]
+	print(train)
