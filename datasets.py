@@ -4,7 +4,7 @@ import dgl
 from dgl.data.fraud import FraudAmazonDataset, FraudYelpDataset
 from sklearn.model_selection import train_test_split
 
-DATA_NAMES = ['yelp', 'amazon', 'amazon_new']
+DATA_NAMES = ['yelp', 'amazon', 'amazon_new', 'reddit', 'tfinance', 'tsocial']
 
 
 def load_data(data_name, multi_relation, self_loop=True, raw_dir='./data', seed=42, train_size=0.1, test_size=0.67):

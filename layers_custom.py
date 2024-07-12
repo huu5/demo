@@ -70,7 +70,7 @@ class GraphConvolutionBS(Module):
     # {D} ^ {-1 / 2}
     # H ^ {(l)}
     # W ^ {(l)}) \]
-    def forward(self, input, adj):
+    def forward(self, input, adj):  # adj 应为 D^-0.5 * (A+I) * D^-0.5
         support = torch.mm(input, self.weight)  # 形状为 (num_nodes, out_features) 的支持矩阵 support。
         output = torch.spmm(adj, support)  # 进行稀疏矩阵与密集矩阵的乘法，将邻接矩阵 adj 与支持矩阵 support 相乘，
         # 得到新的节点特征矩阵 output，形状为 (num_nodes, out_features)。
@@ -139,7 +139,7 @@ class GraphBaseBlock(Module):
             if in_features != self.hiddendim:
                 raise RuntimeError("The dimension of in_features and hiddendim should be matched in add model.")
             self.out_features = out_features
-        elif self.aggrmethod == "nores":
+        elif self.aggrmethod == "nores":  # no res 即不要残差连接
             self.out_features = out_features
         else:
             raise NotImplementedError("The aggregation method only support 'concat','add' and 'nores'.")
@@ -196,7 +196,7 @@ class MultiLayerGCNBlock(Module):
 
     def __init__(self, in_features, out_features, nbaselayer,
                  withbn=True, withloop=True, activation=F.relu, dropout=True,
-                 aggrmethod=None, dense=None):
+                 aggrmethod="nores", dense=None):
         """
         The multiple layer GCN block.
         :param in_features: the input feature dimension.
@@ -210,6 +210,7 @@ class MultiLayerGCNBlock(Module):
         :param dense: not applied.
         """
         super(MultiLayerGCNBlock, self).__init__()
+
         self.model = GraphBaseBlock(in_features=in_features,
                                     out_features=out_features,
                                     nbaselayer=nbaselayer,
@@ -220,6 +221,11 @@ class MultiLayerGCNBlock(Module):
                                     dense=False,
                                     aggrmethod="nores")  # nores 可能表示 "no residual" 或者 "no residual connection"，
         # 这意味着在这个聚合方法中，不使用残差连接。
+        self.model.in_features = in_features
+        self.model.hiddendim = out_features
+        self.model.nhiddenlayer = nbaselayer
+        self.model.out_features = out_features
+        self.aggrmethod = aggrmethod
 
     def forward(self, input, adj):
         return self.model.forward(input, adj)

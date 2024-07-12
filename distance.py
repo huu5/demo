@@ -8,12 +8,12 @@ from tqdm import tqdm
 
 class AttrSim:
 
-    def __init__(self, adj, features, labels=None, args=None, nclass=4):
+    def __init__(self, adj, features, labels=None, args=None, nclass=2):
         if args.dataset == 'nell':
             self.features = to_scipy(features)
         else:
             self.features = features.cpu().numpy()
-        self.features[self.features!=0] = 1
+        self.features[self.features != 0] = 1
 
         self.labels = labels
         self.adj = adj
@@ -70,7 +70,7 @@ class AttrSim:
         self.node_pairs = (sampled[0], sampled[1])
 
         self.sims = sims
-        return torch.FloatTensor(sims[self.node_pairs]).reshape(-1,1)
+        return torch.FloatTensor(sims[self.node_pairs]).reshape(-1, 1)
 
     def get_class(self):
         args = self.args

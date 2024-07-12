@@ -67,6 +67,7 @@ class DataHandlerModule():
 if __name__ == '__main__':
 	parser = argparse.ArgumentParser()
 	parser.add_argument('--data_name', type=str, default='amazon')
+	parser.add_argument('--self_loop', action='store_true')
 	parser.add_argument('--multi_relation', action='store_true')
 	parser.add_argument('--train_ratio', type=float, default=0.8)
 	parser.add_argument('--test_ratio', type=float, default=0.2)

@@ -2,6 +2,7 @@ import os
 from datetime import datetime
 from utils import create_dir
 
+
 class ResultManager:
 	"""
 	ResultManager manages and saves results of model training and testing based on args.

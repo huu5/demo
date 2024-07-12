@@ -20,8 +20,8 @@ class Base:
 
     def get_adj_norm(self):
         if self.cached_adj_norm is None:
-            adj_norm = preprocess_adj(self.adj, self.device)
-            self.cached_adj_norm= adj_norm
+            adj_norm = preprocess_adj(self.adj, self.device)  # 包含自环的归一化，即 adj_norm =  D^-0.5 * (A+I) * D^-0.5
+            self.cached_adj_norm = adj_norm
         return self.cached_adj_norm
 
     def make_loss(self, embeddings):
@@ -30,9 +30,11 @@ class Base:
     def transform_data(self):
         return self.get_adj_norm(), self.features
 
+
 class PairwiseAttrSim(Base):
 
     def __init__(self, adj, features, nhid, device, idx_train, args, regression=True):
+        super().__init__(adj, features, device)
         args.idx_train = idx_train
 
         self.adj = adj
@@ -69,7 +71,7 @@ class PairwiseAttrSim(Base):
 
     def regression_loss(self, embeddings):
         if self.pseudo_labels is None:
-            agent = AttrSim(self.adj ,self.features, args=self.args)
+            agent = AttrSim(self.adj, self.features, args=self.args, nclass=2)
             self.pseudo_labels = agent.get_label().to(self.device)
             node_pairs = agent.node_pairs
             self.node_pairs = node_pairs
@@ -155,8 +157,8 @@ class MergedKNNGraph(Base):
            os.mkdir('saved')
         if not os.path.exists(f'saved/{args.dataset}_sims_{k}.npz'):
             from sklearn.metrics.pairwise import cosine_similarity
-            features = np.copy(features)
-            features[features!=0] = 1
+            features = np.copy(features.cpu())
+            features[features != 0] = 1
             sims = cosine_similarity(features)
             sims[(np.arange(len(sims)), np.arange(len(sims)))] = 0
             for i in range(len(sims)):
@@ -168,7 +170,6 @@ class MergedKNNGraph(Base):
         else:
             print(f'loading saved/{args.dataset}_sims_{k}.npz')
             self.A_feat = sp.load_npz(f'saved/{args.dataset}_sims_{k}.npz')
-
 
     def transform_data(self, lambda_=None):
         if self.cached_adj_norm is None:
@@ -213,7 +214,12 @@ def sparse_mx_to_torch_sparse_tensor(sparse_mx):
 
 
 def aug_normalized_adjacency(adj):
-    adj = adj + sp.eye(adj.shape[0])
+    # 将 adj 转换为 numpy 数组
+    adj_np = adj.numpy()
+    # 将 numpy 数组转换为稀疏矩阵
+    adj_sparse = sp.coo_matrix(adj_np)
+
+    adj = adj_sparse + sp.eye(adj.shape[0])
     adj = sp.coo_matrix(adj)
     row_sum = np.array(adj.sum(1))
     d_inv_sqrt = np.power(row_sum, -0.5).flatten()

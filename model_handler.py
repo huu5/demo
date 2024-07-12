@@ -60,7 +60,7 @@ class ModelHandlerModule():
         feature = self.dataset['features']
 
         model = SimPGCN(feature.shape[1], nhid=self.args.hidden_dim, nclass=2, nhidlayer=self.args.n_layers,
-                        dropout=self.args.dropout, device=self.args.cuda_id, bias_init=self.args.bias_init,
+                        dropout=self.args.dropout, nbaselayer=1, device=self.args.cuda_id, bias_init=self.args.bias_init,
                         gamma=self.args.gamma, nnodes=feature.shape[0])
 
         return model
@@ -88,6 +88,7 @@ class ModelHandlerModule():
 
         # [STEP-3-1] Define the model and loss function.
         model = self.model
+        print(model)
         # F.cross_entropy 是一个综合函数，结合了 log_softmax 和 nll_loss 两步操作。它可以直接接受原始的未归一化的 logits 作为输入，
         # 并返回交叉熵损失。使用起来非常方便，因为你不需要手动应用 log_softmax。
         # loss_fn = nn.CrossEntropyLoss()  # 在二分类或多分类问题中，
@@ -104,10 +105,12 @@ class ModelHandlerModule():
 
 
         """# knn邻接矩阵"""
-        adj1 = graph.adj_tensors(fmt='coo')
-        adj = graph.adj().to_dense().to('cuda')
+        # adj1 = graph.adj_tensors(fmt='coo')
+        adj = graph.adj().to_dense()
+               # .to('cuda')
         # adj = preprocess_adj_noloop(adj)
-        features = self.dataset['features'].to('cuda')
+        features = self.dataset['features'].to(device)
+                    # .to('cuda')
         ssl_agent = PairwiseAttrSim(adj, features, idx_train=idx_train, nhid=self.args.hidden_dim,
                                     args=self.args,
                                     device='cuda')
@@ -151,8 +154,24 @@ class ModelHandlerModule():
             #     print("参数：", param)
             #     print('设备：', param.device)
 
-            log_probs, embeddings = model.myforward(features, adj, adj_knn, layer=1.5)
-            loss = F.nll_loss(log_probs[idx_train], y_train.cuda())
+            adj_train, fea_train = ssl_agent.transform_data()
+            adj_train.to(device)
+            fea_train.to(device)
+            # adj_train.to(device, non_blocking=True), fea_train.to(device, non_blocking=True)
+
+            log_probs, embeddings = model.myforward(fea_train, adj_train, adj_knn, layer=1.5)
+            loss_train = F.nll_loss(log_probs[idx_train], y_train.cuda())
+
+            # # special for reddit
+            # if sampler.learning_type == "inductive":
+            #     loss_train = F.nll_loss(output, labels[idx_train])
+            #     acc_train = accuracy(output, labels[idx_train])
+            # else:
+            #     loss_train = F.nll_loss(output[idx_train], labels[idx_train])
+            #     acc_train = accuracy(output[idx_train], labels[idx_train])
+
+            loss_ssl = self.args.lambda_ * ssl_agent.make_loss(embeddings)
+            loss_total = loss_train + loss_ssl
             # for batch in train_loader:
             #     # [STEP-4-2] Set the batche nodes.
             #     _, output_nodes, blocks = batch
@@ -169,12 +188,12 @@ class ModelHandlerModule():
             #     loss = loss_fn(logits, output_labels.squeeze())
             #
             # [STEP-4-4] Compute the gradient and update the model.
-            loss.backward()
+            loss_total.backward()
             optimizer.step()
 
             # [STEP-4-5] Clear the remain gradient as zero value.
             optimizer.zero_grad()
-            avg_loss.append(loss.item() / features.shape[0])  # Calculate average train loss.
+            avg_loss.append(loss_total.item() / features.shape[0])  # Calculate average train loss.
 
             # [STEP-4-6] Write the train log.
             end_time = time.time()
@@ -187,7 +206,7 @@ class ModelHandlerModule():
                 model.eval()
                 # [STEP-5-1] Calculate the AUC, Recall, F1-macro, Precision with validation set.
 
-                auc_val, recall_val, f1_mac_val, precision_val = test(model, features, idx_valid, y_valid, adj, adj_knn,
+                auc_val, recall_val, f1_mac_val, precision_val = test(model, features, idx_valid, y_valid, adj_train, adj_knn,
                                                                       self.result, epoch_best, flag="val")
 
                 # [STEP-5-2] If the current model is best, save the model and update the best value.
@@ -210,11 +229,27 @@ class ModelHandlerModule():
 
         # [STEP-9] Test the model performance.
         print("\n", "*" * 20, f" Test the SimPGCN ", "*" * 20)
-        auc_test, recall_test, f1_mac_test, precision_test = test(model, features, idx_test, y_test, adj, adj_knn,
+        auc_test, recall_test, f1_mac_test, precision_test = test(model, fea_train, idx_test, y_test, adj_train, adj_knn,
                                                                   self.result, epoch_best, flag="test")
 
         return auc_test, f1_mac_test
 
 
 if __name__ == '__main__':
-    sampler = dgl.dataloading.MultiLayerFullNeighborSampler(2)
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--seed', type=int, default=100, help='seed')
+    parser.add_argument('--cuda_id', type=int, default=1)
+    # sampler = dgl.dataloading.MultiLayerFullNeighborSampler(2)
+
+    # 超参数
+    parser.add_argument('--epochs', type=int, default=500)
+    parser.add_argument('--patience', type=int, default=100)
+    parser.add_argument('--hidden_dim', type=int, default=128)
+    parser.add_argument('--n_layers', type=int, default=3)
+    parser.add_argument('--dropout', type=int, default=0)
+    parser.add_argument('--gamma', type=float, default=0.01)
+    parser.add_argument('--bias_init', type=float, default=0)
+    parser.add_argument('--lambda_', type=float, default=0.1, help='if lploss')
+
+    parser.add_argument('--lr', type=float, default=0.02)
+    parser.add_argument('--weight_decay', type=float, default=0)  # 源码 5e-4

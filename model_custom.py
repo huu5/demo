@@ -28,7 +28,7 @@ class SimPGCN(nn.Module):
                  baseblock="mutigcn",
                  inputlayer="gcn",
                  outputlayer="gcn",
-                 nbaselayer=0,
+                 nbaselayer=1,
                  activation=lambda x: x,
                  withbn=True,
                  withloop=True,
@@ -93,7 +93,7 @@ class SimPGCN(nn.Module):
 
         for s in self.scores:
             # s.data.fill_(0)
-            stdv = 1. / math.sqrt(s.size(1))
+            stdv = 1. / math.sqrt(s.size(1))  # s.size(1) 是参数的第二维度大小
             s.data.uniform_(-stdv, stdv)
             # glorot(s)
             # zeros(self.bias)
